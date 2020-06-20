@@ -31,15 +31,16 @@ $ pip3 install scikit-learn
 
 """
 import math
-from multiprocessing import Pool, Queue
-from sklearn import neighbors
-import os, time
+import os
 import os.path
 import pickle
+from multiprocessing import Pool
+
+import face_recognition
 import numpy as np
 from PIL import Image, ImageDraw
-import face_recognition
 from face_recognition.face_recognition_cli import image_files_in_folder
+from sklearn import neighbors
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
@@ -71,7 +72,7 @@ def train_worker(img_path, verbose, class_dir):
 def test_worker(image_path, model_path, label):
     predictions = predict(image_path, model_path=model_path)
     if predictions == []:
-        print("Test image No.{} cannot find label".format(label));
+        # print("Test image No.{} cannot find label".format(label));
         return (label, [[-1]])
     # print("Looking for faces in {}".format(label))
     return label, predictions
@@ -103,25 +104,22 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
     :return: returns knn classifier that was trained on the given data.
     """
 
-    def save_clf(weights_name):
-        print("Training KNN classifier of weight:{}...".format(weights_name))
-        if weights_name == "max":
-            weights = weights_max
-        else:
-            weights = weights_name
-        knn_clf = neighbors.KNeighborsClassifier(n_neighbors=n_neighbors, n_jobs=-1, algorithm=knn_algo,
-                                                 weights=weights)
+    def save_clf(distance):
+        print("Training KNN classifier of weight:{}...".format(distance.__name__))
+        knn_clf = neighbors.KNeighborsClassifier(n_neighbors=n_neighbors, n_jobs=1, algorithm=knn_algo,
+                                                 weights="distance", metric=distance)
         knn_clf.fit(X, y)
         if model_save_path is not None:
-            with open((model_save_path + weights_name + ".clf"), 'wb') as f:
+            with open((model_save_path + distance.__name__ + ".clf"), 'wb') as f:
                 pickle.dump(knn_clf, f)
 
     X = []
     y = []
     pool = Pool()
     tasks = list()
-    if os.path.isfile((model_save_path + "distance.clf")) and os.path.isfile(
-            (model_save_path + "uniform.clf")) and os.path.isfile((model_save_path + "max.clf")):
+    if os.path.isfile((model_save_path + manhattan.__name__ + ".clf")) and os.path.isfile(
+            (model_save_path + euclidean.__name__ + ".clf")) and os.path.isfile(
+        (model_save_path + chebyshev.__name__ + ".clf")):
         print('Use exist clf!')
         return
     # Loop through each person in the training set
@@ -155,16 +153,24 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
             continue
         X.append(encoding)
         y.append(class_dir)
-    save_clf("distance")
-    save_clf("uniform")
-    save_clf("max")
+    save_clf(chebyshev)
+    save_clf(euclidean)
+    save_clf(manhattan)
     return
 
 
-def weights_max(distance):
-    arg = np.argmax(distance)
-    res = np.zeros(distance.shape[1])
-    res[arg] = distance[arg]
+def chebyshev(X, Y):
+    res = np.max(np.abs(X - Y))
+    return res
+
+
+def manhattan(X, Y):
+    res = np.sum(np.abs(X - Y))
+    return res
+
+
+def euclidean(X, Y):
+    res = np.sum((X - Y) ** 2) ** 0.5
     return res
 
 
@@ -242,14 +248,14 @@ def show_prediction_labels_on_image(img_path, predictions):
     pil_image.show()
 
 
-def test(weights):
+def test(distance):
     tasks = list()
     for image_dir in listdir_nohidden(test_dir):
         label = image_dir
         labels.append(label)
         image_dir = os.path.join(test_dir, image_dir)
         for image_path in [os.path.join(image_dir, f) for f in listdir_nohidden(image_dir)]:
-            tasks.append((image_path, "trained_knn_model_" + weights + ".clf", label))
+            tasks.append((image_path, ("trained_knn_model_" + distance.__name__ + ".clf"), label))
             # predictions = predict(image_path, model_path="trained_knn_model.clf")
 
         # Find all people in the image using a trained classifier model
@@ -270,10 +276,14 @@ def test(weights):
         #     result_labels.append(-1)
 
     accuracy = np.mean(test_result)
-    print("Accuracy for weights:{} is {}".format(weights, accuracy))
+    print("Accuracy for distance:{} is {}".format(distance.__name__, accuracy))
 
 
 if __name__ == "__main__":
+    # a = chebyshev(np.array([1, 1, 1]), np.array([4, 5, 6]))
+    # c = euclidean(np.array([1, 1, 1]), np.array([4, 5, 1]))
+    # b = manhattan(np.array([1, 1, 1]), np.array([4, 5, 6]))
+    # weights_max([0, 1, 3, 4, 1])
     # test = train_worker('./data/TRAIN/362/362_0.jpg', verbose=0, class_dir='362')
     # STEP 1: Train the KNN classifier and save it to disk
     # Once the model is trained and saved, you can skip this step next time.
@@ -286,7 +296,7 @@ if __name__ == "__main__":
     test_result = []
     result_labels = []
     pool = Pool()
-    test("uniform")
-    test("distance")
-    test("max")
+    test(euclidean)
+    test(manhattan)
+    test(chebyshev)
     # show_prediction_labels_on_image(os.path.join(image_path, predictions))

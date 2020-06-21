@@ -119,7 +119,10 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
     tasks = list()
     if os.path.isfile((model_save_path + manhattan.__name__ + ".clf")) and os.path.isfile(
             (model_save_path + euclidean.__name__ + ".clf")) and os.path.isfile(
-        (model_save_path + chebyshev.__name__ + ".clf")):
+        (model_save_path + chebyshev.__name__ + ".clf")) and os.path.isfile(
+        model_save_path + laplace_kernel.__name__ + ".clf") and os.path.isfile(
+        model_save_path + poly_kernel.__name__ + ".clf") and os.path.isfile(
+        model_save_path + rbf_kernel.__name__ + ".clf"):
         print('Use exist clf!')
         return
     # Loop through each person in the training set
@@ -156,6 +159,9 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
     save_clf(chebyshev)
     save_clf(euclidean)
     save_clf(manhattan)
+    save_clf(poly_kernel)
+    save_clf(laplace_kernel)
+    save_clf(rbf_kernel)
     return
 
 
@@ -174,12 +180,38 @@ def euclidean(X, Y):
     return res
 
 
-def kernel_function(X, Y, method):
-    if (method == 'rbf'):
-        return
+def rbf_kernel(X, Y):
+    method = rbf
+    return method(X, X) - 2 * method(X, Y) + method(Y, Y)
 
 
-def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.6):
+def laplace_kernel(X, Y):
+    method = laplace
+    return method(X, X) - 2 * method(X, Y) + method(Y, Y)
+
+
+def poly_kernel(X, Y):
+    method = poly
+    return method(X, X) - 2 * method(X, Y) + method(Y, Y)
+
+
+def rbf(X, Y):
+    tmp = np.linalg.norm(X - Y) ** 2
+    return np.exp(-tmp / (2 * rbf_para ** 2))
+
+
+def laplace(X, Y):
+    tmp = np.linalg.norm(X - Y)
+    return np.exp(-tmp / laplace_para)
+
+
+def poly(X, Y):
+    tmp = np.dot(X, Y)
+    return tmp ** poly_para
+
+
+# 0.6
+def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.8):
     """
     Recognizes faces in given image using a trained KNN classifier
 
@@ -285,14 +317,16 @@ def test(distance):
 
 
 if __name__ == "__main__":
-    # a = chebyshev(np.array([1, 1, 1]), np.array([4, 5, 6]))
+    rbf_para = 10
+    laplace_para = 6
+    poly_para = 8
+    a = poly_kernel(np.array([1, 1, 1]), np.array([4, 5, 6]))
     # c = euclidean(np.array([1, 1, 1]), np.array([4, 5, 1]))
     # b = manhattan(np.array([1, 1, 1]), np.array([4, 5, 6]))
     # weights_max([0, 1, 3, 4, 1])
     # test = train_worker('./data/TRAIN/362/362_0.jpg', verbose=0, class_dir='362')
     # STEP 1: Train the KNN classifier and save it to disk
     # Once the model is trained and saved, you can skip this step next time.
-    a = np.array([[1, 2, 3], [2, 6, 3]])
     # b = np.array([1, 2])
     # c = np.array([2, 3])
     # d = b * c.T
@@ -306,7 +340,11 @@ if __name__ == "__main__":
     test_result = []
     result_labels = []
     pool = Pool()
+
     test(euclidean)
     test(manhattan)
     test(chebyshev)
+    test(laplace_kernel)
+    test(poly_kernel)
+    test(rbf_kernel)
     # show_prediction_labels_on_image(os.path.join(image_path, predictions))

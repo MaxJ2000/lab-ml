@@ -174,6 +174,11 @@ def euclidean(X, Y):
     return res
 
 
+def kernel_function(X, Y, method):
+    if (method == 'rbf'):
+        return
+
+
 def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.6):
     """
     Recognizes faces in given image using a trained KNN classifier
@@ -287,6 +292,11 @@ if __name__ == "__main__":
     # test = train_worker('./data/TRAIN/362/362_0.jpg', verbose=0, class_dir='362')
     # STEP 1: Train the KNN classifier and save it to disk
     # Once the model is trained and saved, you can skip this step next time.
+    a = np.array([[1, 2, 3], [2, 6, 3]])
+    # b = np.array([1, 2])
+    # c = np.array([2, 3])
+    # d = b * c.T
+    # b = a[1, :]
     test_dir = './data/TEST'
     train_dir = './data/TRAIN'
     train(train_dir, model_save_path="trained_knn_model_", n_neighbors=2, verbose=True)

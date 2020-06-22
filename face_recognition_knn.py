@@ -184,22 +184,26 @@ def euclidean(X, Y):
 
 def rbf_kernel(X, Y):
     method = rbf
-    return method(X, X) - 2 * method(X, Y) + method(Y, Y)
+    tmp = method(X, X) - 2 * method(X, Y) + method(Y, Y)
+    return tmp ** 0.5
 
 
 def laplace_kernel(X, Y):
     method = laplace
-    return method(X, X) - 2 * method(X, Y) + method(Y, Y)
+    tmp = method(X, X) - 2 * method(X, Y) + method(Y, Y)
+    return tmp ** 0.5
 
 
 def poly_kernel(X, Y):
     method = poly
-    return method(X, X) - 2 * method(X, Y) + method(Y, Y)
+    tmp = method(X, X) - 2 * method(X, Y) + method(Y, Y)
+    return tmp ** 0.5
 
 
 def lin_kernel(X, Y):
     method = lin
-    return method(X, X) - 2 * method(X, Y) + method(Y, Y)
+    tmp = method(X, X) - 2 * method(X, Y) + method(Y, Y)
+    return tmp ** 0.5
 
 
 def rbf(X, Y):
@@ -332,11 +336,11 @@ def test(distance):
 
 
 if __name__ == "__main__":
-    rbf_para = 19
-    laplace_para = 1
-    poly_para = 4
-    a = poly_kernel(np.array([1, 1, 1]), np.array([4, 5, 6]))
-    # c = euclidean(np.array([1, 1, 1]), np.array([4, 5, 1]))
+    rbf_para = 5
+    laplace_para = 0.1
+    poly_para = 3
+    a = lin_kernel(np.array([1, 1, 1]), np.array([4, 5, 6]))
+    c = euclidean(np.array([1, 1, 1]), np.array([4, 5, 6]))
     # b = manhattan(np.array([1, 1, 1]), np.array([4, 5, 6]))
     # weights_max([0, 1, 3, 4, 1])
     # test = train_worker('./data/TRAIN/362/362_0.jpg', verbose=0, class_dir='362')

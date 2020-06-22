@@ -122,7 +122,8 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
         (model_save_path + chebyshev.__name__ + ".clf")) and os.path.isfile(
         model_save_path + laplace_kernel.__name__ + ".clf") and os.path.isfile(
         model_save_path + poly_kernel.__name__ + ".clf") and os.path.isfile(
-        model_save_path + rbf_kernel.__name__ + ".clf"):
+        model_save_path + rbf_kernel.__name__ + ".clf") and os.path.isfile(
+        model_save_path + lin_kernel.__name__ + ".clf"):
         print('Use exist clf!')
         return
     # Loop through each person in the training set
@@ -162,6 +163,7 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
     save_clf(poly_kernel)
     save_clf(laplace_kernel)
     save_clf(rbf_kernel)
+    save_clf(lin_kernel)
     return
 
 
@@ -195,6 +197,11 @@ def poly_kernel(X, Y):
     return method(X, X) - 2 * method(X, Y) + method(Y, Y)
 
 
+def lin_kernel(X, Y):
+    method = lin
+    return method(X, X) - 2 * method(X, Y) + method(Y, Y)
+
+
 def rbf(X, Y):
     tmp = np.linalg.norm(X - Y) ** 2
     return np.exp(-tmp / (2 * rbf_para ** 2))
@@ -210,8 +217,13 @@ def poly(X, Y):
     return tmp ** poly_para
 
 
-# 0.6
-def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.8):
+def lin(X, Y):
+    tmp = np.dot(X, Y)
+    return tmp
+
+
+# remove threshold
+def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.6):
     """
     Recognizes faces in given image using a trained KNN classifier
 
@@ -246,12 +258,15 @@ def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.8):
     faces_encodings = face_recognition.face_encodings(X_img, known_face_locations=X_face_locations)
 
     # Use the KNN model to find the best matches for the test face
-    closest_distances = knn_clf.kneighbors(faces_encodings, n_neighbors=1)
-    are_matches = [closest_distances[0][i][0] <= distance_threshold for i in range(len(X_face_locations))]
+    # closest_distances = knn_clf.kneighbors(faces_encodings, n_neighbors=1)
+
+    # are_matches = [closest_distances[0][i][0] <= distance_threshold for i in range(len(X_face_locations))]
+
+    # are_matches = np.ones(1000)
 
     # Predict classes and remove classifications that aren't within the threshold
-    return [(pred, loc) if rec else ("unknown", loc) for pred, loc, rec in
-            zip(knn_clf.predict(faces_encodings), X_face_locations, are_matches)]
+    return [(pred, loc) for pred, loc in
+            zip(knn_clf.predict(faces_encodings), X_face_locations)]
 
 
 def show_prediction_labels_on_image(img_path, predictions):
@@ -317,9 +332,9 @@ def test(distance):
 
 
 if __name__ == "__main__":
-    rbf_para = 10
-    laplace_para = 6
-    poly_para = 8
+    rbf_para = 19
+    laplace_para = 1
+    poly_para = 4
     a = poly_kernel(np.array([1, 1, 1]), np.array([4, 5, 6]))
     # c = euclidean(np.array([1, 1, 1]), np.array([4, 5, 1]))
     # b = manhattan(np.array([1, 1, 1]), np.array([4, 5, 6]))
@@ -347,4 +362,5 @@ if __name__ == "__main__":
     test(laplace_kernel)
     test(poly_kernel)
     test(rbf_kernel)
+    test(lin_kernel)
     # show_prediction_labels_on_image(os.path.join(image_path, predictions))

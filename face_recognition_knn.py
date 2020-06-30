@@ -105,8 +105,8 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
     """
 
     def save_clf(distance):
-        print("Training KNN classifier of weight:{}...".format(distance.__name__))
-        knn_clf = neighbors.KNeighborsClassifier(n_neighbors=n_neighbors, n_jobs=1, algorithm=knn_algo,
+        print("Training KNN classifier of metric:{}...".format(distance.__name__))
+        knn_clf = neighbors.KNeighborsClassifier(n_neighbors=n_neighbors, n_jobs=1, algorithm="auto",
                                                  weights="distance", metric=distance)
         knn_clf.fit(X, y)
         if model_save_path is not None:
@@ -142,7 +142,7 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
             #     if verbose:
             #         print("Image {} not suitable for training: {}".format(img_path, "Didn't find a face" if len(face_bounding_boxes) < 1 else "Found more than one face"))
             # else:
-            #     # Add face encoding for current image to the training set
+            #     # Add fac e encoding for current image to the training set
             #     X.append(face_recognition.face_encodings(image, known_face_locations=face_bounding_boxes)[0])
             #     y.append(class_dir)
             #     print("Image {} has been trained".format(class_dir))
@@ -336,35 +336,22 @@ def test(distance):
 
 
 if __name__ == "__main__":
-    rbf_para = 5
-    laplace_para = 0.1
+    rbf_para = 1
+    laplace_para = 0.20
     poly_para = 3
-    a = lin_kernel(np.array([1, 1, 1]), np.array([4, 5, 6]))
-    c = euclidean(np.array([1, 1, 1]), np.array([4, 5, 6]))
-    # b = manhattan(np.array([1, 1, 1]), np.array([4, 5, 6]))
-    # weights_max([0, 1, 3, 4, 1])
-    # test = train_worker('./data/TRAIN/362/362_0.jpg', verbose=0, class_dir='362')
-    # STEP 1: Train the KNN classifier and save it to disk
-    # Once the model is trained and saved, you can skip this step next time.
-    # b = np.array([1, 2])
-    # c = np.array([2, 3])
-    # d = b * c.T
-    # b = a[1, :]
     test_dir = './data/TEST'
     train_dir = './data/TRAIN'
     train(train_dir, model_save_path="trained_knn_model_", n_neighbors=2, verbose=True)
     print("Training complete!")
-    # STEP 2: Using the trained classifier, make predictions for unknown images
     labels = list()
     test_result = []
     result_labels = []
     pool = Pool()
 
-    test(euclidean)
-    test(manhattan)
-    test(chebyshev)
-    test(laplace_kernel)
+    # test(euclidean)
+    # test(manhattan)
+    # test(chebyshev)
+    # test(laplace_kernel)
     test(poly_kernel)
-    test(rbf_kernel)
-    test(lin_kernel)
-    # show_prediction_labels_on_image(os.path.join(image_path, predictions))
+    # test(rbf_kernel)
+    # test(lin_kernel)
